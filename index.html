@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>午餐交給命運</title>
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    --bg: #dfe4ea;
+    --panel: #f4f6f8;
+    --panel-strong: #e1e5ea;
+    --steel-900: #1d232a;
+    --steel-800: #2a3139;
+    --steel-700: #3b4652;
+    --steel-600: #556373;
+    --steel-500: #78879a;
+    --steel-300: #b9c2cf;
+    --steel-100: #edf1f5;
+    --accent: #c94d32;
+    --accent-2: #e28043;
+    --accent-3: #f0b15c;
+    --good: #2e5e4d;
+    --good-2: #3a7a5e;
+    --danger: #a8312d;
+    --shadow: rgba(18, 24, 30, 0.22);
+    --shadow-soft: rgba(18, 24, 30, 0.12);
+  }
+
+  html, body { margin: 0; }
+  body {
+    font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", "Heiti TC", sans-serif;
+    background: linear-gradient(180deg, #dfe4ea 0%, #d4d9df 100%);
+    color: var(--steel-900);
+    line-height: 1.3;
+  }
+
+  main {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 20px 16px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .sign {
+    background: linear-gradient(180deg, #1e242a 0%, #11171d 100%);
+    border: 5px solid #d4a15a;
+    border-radius: 18px;
+    padding: 20px 14px;
+    min-height: 200px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 10px 24px var(--shadow-soft);
+  }
+
+  .sign-label {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #f2d39d;
+    text-transform: uppercase;
+  }
+
+  .sign-result {
+    margin: 0;
+    font-size: clamp(2.5rem, 11vw, 4.8rem);
+    font-weight: 900;
+    color: #f5c56b;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+    letter-spacing: 0.04em;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.18);
+  }
+
+  .cats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .cat:first-child, .cat:last-child { grid-column: 1 / -1; }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+  }
+
+  .cat {
+    min-height: 66px;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--steel-100);
+    background: linear-gradient(180deg, #3b4652 0%, #2f3842 100%);
+    border: 3px solid #6f7f8f;
+    border-radius: 14px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 10px rgba(18, 24, 30, 0.12);
+  }
+
+  .cat[aria-pressed="true"] {
+    background: linear-gradient(180deg, var(--good) 0%, var(--good-2) 100%);
+    border-color: #8dd4b0;
+    color: #f4fff7;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 6px 16px rgba(42, 94, 77, 0.28);
+  }
+
+  .cat:active, .go:active, .add button:active, .del:active {
+    transform: scale(0.985);
+  }
+
+  .go {
+    min-height: 100px;
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: #fff8f2;
+    background: linear-gradient(180deg, var(--accent) 0%, #9d2d23 100%);
+    border: 0;
+    border-radius: 18px;
+    box-shadow: 0 10px 22px rgba(154, 46, 31, 0.28), inset 0 1px 0 rgba(255,255,255,0.2);
+    letter-spacing: 0.04em;
+  }
+
+  [hidden] { display: none !important; }
+  .editor {
+    border: 3px solid var(--steel-700);
+    border-radius: 16px;
+    padding: 0 14px 14px;
+    background: rgba(255,255,255,0.18);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 8px 18px rgba(31,36,42,0.08);
+  }
+
+  .editor summary {
+    padding: 16px 0;
+    font-size: 1.55rem;
+    font-weight: 800;
+    cursor: pointer;
+    color: var(--steel-900);
+    list-style: none;
+  }
+
+  .editor summary::-webkit-details-marker { display: none; }
+
+  .editor-title {
+    margin: 8px 0 12px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--steel-700);
+  }
+
+  .add {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+  }
+
+  .add input {
+    min-height: 62px;
+    min-width: 0;
+    font-family: inherit;
+    font-size: 1.45rem;
+    padding: 0 12px;
+    border: 3px solid var(--steel-700);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.7);
+    color: var(--steel-900);
+  }
+
+  .add button {
+    min-height: 62px;
+    padding: 0 20px;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #ffffff;
+    background: linear-gradient(180deg, var(--steel-700) 0%, var(--steel-800) 100%);
+    border: 0;
+    border-radius: 12px;
+    box-shadow: 0 8px 18px rgba(38,45,53,0.18);
+  }
+
+  .msg {
+    min-height: 1.5em;
+    margin: 12px 0 0;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--good);
+  }
+
+  .msg.err { color: var(--danger); }
+
+  .list {
+    list-style: none;
+    margin: 10px 0 0;
+    padding: 0;
+  }
+
+  .list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-top: 2px solid var(--steel-300);
+  }
+
+  .list .name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+    color: var(--steel-900);
+  }
+
+  .list .del {
+    flex: none;
+    min-height: 52px;
+    padding: 0 18px;
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #fff7f5;
+    background: linear-gradient(180deg, var(--accent) 0%, #9d2d23 100%);
+    border: 0;
+    border-radius: 12px;
+    box-shadow: 0 8px 18px rgba(154, 46, 31, 0.18);
+  }
+
+  .empty {
+    margin: 10px 0 0;
+    font-size: 1.3rem;
+    color: var(--steel-700);
+    font-weight: 700;
+  }
+
+  :focus-visible {
+    outline: 4px solid #d7ad59;
+    outline-offset: 3px;
+  }
+
+  @media (min-width: 600px) {
+    .sign-label { font-size: 1.6rem; }
+    .cat { min-height: 72px; font-size: 1.8rem; }
+    .go { min-height: 110px; font-size: 2.7rem; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <section class="sign" aria-live="polite">
+    <p class="sign-label" id="label">選好種類，再按下面的大按鈕</p>
+    <p class="sign-result" id="result">午餐交給命運</p>
+  </section>
+
+  <div class="cats" id="cats">
+    <button class="cat" data-cat="all" aria-pressed="true">什麼都可以</button>
+    <button class="cat" data-cat="早餐" aria-pressed="false">早餐</button>
+    <button class="cat" data-cat="午晚餐" aria-pressed="false">午晚餐</button>
+    <button class="cat" data-cat="小吃" aria-pressed="false">小吃</button>
+    <button class="cat" data-cat="甜點" aria-pressed="false">甜點</button>
+    <button class="cat" data-cat="飲料" aria-pressed="false">飲料</button>
+  </div>
+
+  <button class="go" id="go">幫我決定</button>
+
+  <details class="editor" id="editor">
+    <summary>新增或刪掉選項</summary>
+    <p class="editor-title" id="editor-title"></p>
+    <form class="add" id="add-form" autocomplete="off">
+      <input type="text" id="new-item" maxlength="20" placeholder="輸入新的選項" aria-label="新的選項名稱">
+      <button type="submit">新增</button>
+    </form>
+    <p class="msg" id="msg" aria-live="polite"></p>
+    <ul class="list" id="list"></ul>
+    <p class="empty" id="empty" hidden>這一類目前沒有選項，請先新增。</p>
+  </details>
+</main>
+
+<script>
+  var DEFAULT_MENU = {
+    "早餐": ["蛋餅", "燒餅油條", "傳統飯糰", "蘿蔔糕", "鐵板麵", "漢堡蛋", "厚片吐司", "鮪魚三明治", "饅頭夾蛋", "水煎包", "韭菜盒", "小籠包", "清粥小菜", "蔥油餅", "鹹豆漿", "刈包", "地瓜粥", "米漿", "燕麥粥", "無糖豆漿"],
+    "午晚餐": ["滷肉飯", "雞肉飯", "排骨便當", "雞腿便當", "自助餐", "牛肉麵", "陽春麵", "炸醬麵", "餛飩湯", "水餃", "蛋炒飯", "咖哩飯", "鍋燒意麵", "涼麵", "肉羹麵", "三杯雞飯", "麻油雞麵線", "火鍋", "烤雞胸肉沙拉", "清蒸魚便當"],
+    "小吃": ["蚵仔煎", "臭豆腐", "鹽酥雞", "雞排", "大腸包小腸", "肉圓", "碗粿", "蚵仔麵線", "棺材板", "擔仔麵", "四神湯", "藥燉排骨", "滷味", "胡椒餅", "潤餅", "筒仔米糕", "烤玉米", "地瓜球", "茶葉蛋", "燙青菜"],
+    "甜點": ["豆花", "芋圓", "燒仙草", "愛玉", "紅豆湯", "綠豆湯", "湯圓", "剉冰", "芒果冰", "車輪餅", "雞蛋糕", "鳳梨酥", "太陽餅", "麻糬", "烤地瓜", "花生捲冰淇淋", "蛋黃酥", "米苔目", "當季水果盤", "優格水果杯"],
+    "飲料": ["珍珠奶茶", "紅茶", "綠茶", "烏龍茶", "四季春茶", "冬瓜茶", "青草茶", "百香果綠茶", "金桔檸檬", "梅子綠茶", "木瓜牛奶", "西瓜汁", "甘蔗汁", "楊桃汁", "咖啡", "拿鐵", "奶茶", "酸梅湯", "無糖麥茶", "薏仁水"]
+  };
+
+  var CATS = ["早餐", "午晚餐", "小吃", "甜點", "飲料"];
+  var STORAGE_KEY = "today-what-to-eat-menu";
+
+  function loadMenu() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      var data = JSON.parse(raw);
+      var saved = {};
+      for (var i = 0; i < CATS.length; i++) {
+        var items = data[CATS[i]];
+        if (!Array.isArray(items)) return null;
+        saved[CATS[i]] = items.filter(function (x) { return typeof x === "string"; });
+      }
+      return saved;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function saveMenu() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(MENU));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  var MENU = loadMenu() || JSON.parse(JSON.stringify(DEFAULT_MENU));
+
+  var category = "all";
+  var lastPick = null;
+
+  var catButtons = document.querySelectorAll(".cat");
+  var labelEl = document.getElementById("label");
+  var resultEl = document.getElementById("result");
+
+  catButtons.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      category = btn.getAttribute("data-cat");
+      catButtons.forEach(function (b) {
+        b.setAttribute("aria-pressed", b === btn ? "true" : "false");
+      });
+      msgEl.textContent = "";
+      msgEl.className = "msg";
+      renderEditor();
+    });
+  });
+
+  document.getElementById("go").addEventListener("click", function () {
+    var pool = category === "all"
+      ? [].concat(MENU["早餐"], MENU["午晚餐"], MENU["小吃"], MENU["甜點"], MENU["飲料"])
+      : MENU[category];
+    if (pool.length === 0) {
+      labelEl.textContent = "這一類沒有選項了";
+      resultEl.textContent = "請先新增";
+      return;
+    }
+    var choices = pool.filter(function (item) { return item !== lastPick; });
+    if (choices.length === 0) choices = pool;
+    var pick = choices[Math.floor(Math.random() * choices.length)];
+    lastPick = pick;
+    labelEl.textContent = "今天吃";
+    resultEl.textContent = pick;
+  });
+
+  /* 新增或刪掉選項 */
+  var editorTitle = document.getElementById("editor-title");
+  var addForm = document.getElementById("add-form");
+  var newItemEl = document.getElementById("new-item");
+  var msgEl = document.getElementById("msg");
+  var listEl = document.getElementById("list");
+  var emptyEl = document.getElementById("empty");
+
+  function showMsg(text, isErr, saved) {
+    msgEl.textContent = saved === false ? text + "（這個瀏覽器無法記住，重新整理後會消失）" : text;
+    msgEl.className = (isErr || saved === false) ? "msg err" : "msg";
+  }
+
+  function renderEditor() {
+    var isAll = category === "all";
+    editorTitle.textContent = isAll
+      ? "請先在上面選一個分類（早餐、午晚餐…），才能新增或刪掉選項。"
+      : "目前分類：" + category;
+    addForm.hidden = isAll;
+    listEl.textContent = "";
+    emptyEl.hidden = true;
+    if (isAll) return;
+
+    var items = MENU[category];
+    emptyEl.hidden = items.length > 0;
+    items.forEach(function (name, index) {
+      var li = document.createElement("li");
+      var span = document.createElement("span");
+      span.className = "name";
+      span.textContent = name;
+      var del = document.createElement("button");
+      del.type = "button";
+      del.className = "del";
+      del.textContent = "刪掉";
+      del.setAttribute("aria-label", "刪掉 " + name);
+      del.addEventListener("click", function () { removeItem(index); });
+      li.appendChild(span);
+      li.appendChild(del);
+      listEl.appendChild(li);
+    });
+  }
+
+  function removeItem(index) {
+    var name = MENU[category][index];
+    MENU[category].splice(index, 1);
+    var saved = saveMenu();
+    renderEditor();
+    showMsg("已刪掉：" + name, false, saved);
+  }
+
+  addForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var name = newItemEl.value.trim();
+    if (!name) {
+      showMsg("請先輸入名字", true);
+      return;
+    }
+    if (MENU[category].indexOf(name) !== -1) {
+      showMsg("「" + name + "」已經有了", true);
+      return;
+    }
+    MENU[category].unshift(name);
+    var saved = saveMenu();
+    newItemEl.value = "";
+    renderEditor();
+    showMsg("已新增：" + name, false, saved);
+  });
+
+  renderEditor();
+</script>
+</body>
+</html>
