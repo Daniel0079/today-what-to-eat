@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>午餐交給命運</title>
+<title>今天該吃什麼</title>
 <style>
   * { box-sizing: border-box; }
   :root {
@@ -44,6 +44,34 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+  }
+
+  .location-box {
+    background: rgba(255,255,255,0.22);
+    border: 3px solid var(--steel-700);
+    border-radius: 16px;
+    padding: 12px 14px 14px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), 0 8px 18px rgba(31,36,42,0.08);
+  }
+
+  .location-label {
+    display: block;
+    margin: 0 0 8px;
+    font-size: 1.28rem;
+    font-weight: 800;
+    color: var(--steel-900);
+  }
+
+  .location-input {
+    width: 100%;
+    min-height: 58px;
+    font-size: 1.35rem;
+    font-family: inherit;
+    padding: 0 12px;
+    border: 3px solid var(--steel-700);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.75);
+    color: var(--steel-900);
   }
 
   .sign {
@@ -111,7 +139,7 @@
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 6px 16px rgba(42, 94, 77, 0.28);
   }
 
-  .cat:active, .go:active, .add button:active, .del:active {
+  .cat:active, .go:active, .add button:active, .del:active, .nearby:active {
     transform: scale(0.985);
   }
 
@@ -127,7 +155,22 @@
     letter-spacing: 0.04em;
   }
 
+  .nearby {
+    display: block;
+    width: 100%;
+    min-height: 88px;
+    font-size: 2rem;
+    font-weight: 900;
+    color: #fffdf9;
+    background: linear-gradient(180deg, #214f45 0%, #0c2f2d 100%);
+    border: 4px solid #b6d9c7;
+    border-radius: 16px;
+    box-shadow: 0 12px 22px rgba(14, 38, 34, 0.22), inset 0 1px 0 rgba(255,255,255,0.2);
+    letter-spacing: 0.04em;
+  }
+
   [hidden] { display: none !important; }
+
   .editor {
     border: 3px solid var(--steel-700);
     border-radius: 16px;
@@ -250,9 +293,14 @@
 </head>
 <body>
 <main>
+  <div class="location-box">
+    <label class="location-label" for="location-input">你現在在哪裡？例如：鳳山站</label>
+    <input class="location-input" id="location-input" type="text" placeholder="你現在在哪裡？例如：鳳山站" aria-label="你現在在哪裡">
+  </div>
+
   <section class="sign" aria-live="polite">
     <p class="sign-label" id="label">選好種類，再按下面的大按鈕</p>
-    <p class="sign-result" id="result">午餐交給命運</p>
+    <p class="sign-result" id="result">今天該吃什麼</p>
   </section>
 
   <div class="cats" id="cats">
@@ -265,6 +313,7 @@
   </div>
 
   <button class="go" id="go">幫我決定</button>
+  <button class="nearby" id="nearby" hidden>找附近的店</button>
 
   <details class="editor" id="editor">
     <summary>新增或刪掉選項</summary>
@@ -321,10 +370,13 @@
 
   var category = "all";
   var lastPick = null;
+  var currentPick = null;
 
   var catButtons = document.querySelectorAll(".cat");
   var labelEl = document.getElementById("label");
   var resultEl = document.getElementById("result");
+  var locationInputEl = document.getElementById("location-input");
+  var nearbyBtn = document.getElementById("nearby");
 
   catButtons.forEach(function (btn) {
     btn.addEventListener("click", function () {
@@ -345,14 +397,26 @@
     if (pool.length === 0) {
       labelEl.textContent = "這一類沒有選項了";
       resultEl.textContent = "請先新增";
+      nearbyBtn.hidden = true;
+      currentPick = null;
       return;
     }
     var choices = pool.filter(function (item) { return item !== lastPick; });
     if (choices.length === 0) choices = pool;
     var pick = choices[Math.floor(Math.random() * choices.length)];
     lastPick = pick;
+    currentPick = pick;
+    nearbyBtn.hidden = false;
     labelEl.textContent = "今天吃";
     resultEl.textContent = pick;
+  });
+
+  nearbyBtn.addEventListener("click", function () {
+    if (!currentPick) return;
+    var place = locationInputEl.value.trim();
+    var query = currentPick + (place ? " " + place : " 附近");
+    var url = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(query);
+    window.open(url, "_blank", "noopener,noreferrer");
   });
 
   /* 新增或刪掉選項 */
