@@ -595,7 +595,11 @@
       if (!raw) return [];
       var data = JSON.parse(raw);
       if (!Array.isArray(data)) return [];
-      return data.filter(function (x) { return typeof x === "string"; }).slice(0, 10);
+      return data.map(function (x) {
+        if (typeof x === "string") return { name: x, date: "" };
+        if (x && typeof x.name === "string") return { name: x.name, date: x.date || "" };
+        return null;
+      }).filter(Boolean).slice(0, 10);
     } catch (e) {
       return [];
     }
@@ -644,16 +648,16 @@
     }
 
     recentStatus.textContent = "最近抽到：";
-    recentHistory.forEach(function (name) {
+    recentHistory.forEach(function (item) {
       var li = document.createElement("li");
       li.className = "recent-item";
-      li.textContent = name;
+      li.textContent = item.name + (item.date ? "（" + item.date + "）" : "");
       recentListEl.appendChild(li);
     });
 
     var count = {};
-    recentHistory.forEach(function (name) {
-      count[name] = (count[name] || 0) + 1;
+    recentHistory.forEach(function (item) {
+      count[item.name] = (count[item.name] || 0) + 1;
     });
     var top = Object.keys(count).sort(function (a, b) { return count[b] - count[a]; }).slice(0, 3);
     var topText = top.map(function (n) { return n + "（" + count[n] + "次）"; }).join("、");
@@ -669,8 +673,10 @@
   });
 
   function addRecentPick(name) {
-    recentHistory = recentHistory.filter(function (item) { return item !== name; });
-    recentHistory.unshift(name);
+    var today = new Date();
+    var dateStr = (today.getMonth() + 1) + "/" + today.getDate();
+    recentHistory = recentHistory.filter(function (item) { return item.name !== name; });
+    recentHistory.unshift({ name: name, date: dateStr });
     recentHistory = recentHistory.slice(0, 10);
     saveRecentHistory();
     updateRecentDisplay();
@@ -869,7 +875,7 @@
 
     var moodFiltered = filterByMood(pool);
     var tempFiltered = applyTemperatureFilter(moodFiltered);
-    var recentBlocked = recentHistory.slice(0, 5);
+    var recentBlocked = recentHistory.slice(0, 5).map(function (x) { return (x && x.name) ? x.name : x; });
     var choices = tempFiltered.filter(function (item) {
       return recentBlocked.indexOf(item) === -1 && excludedList.indexOf(item) === -1;
     });
