@@ -481,6 +481,7 @@
   <section class="sign" aria-live="polite">
     <p class="sign-label" id="label">選好種類，再按下面的大按鈕</p>
     <p class="sign-result" id="result">今天該吃什麼</p>
+    <p id="fortune-tip" style="margin:8px 0 0; font-size:1.05rem; color:#f2d39d; min-height:1.4em;"></p>
   </section>
 
   <div class="mood-panel">
@@ -937,7 +938,8 @@
     labelEl.textContent = "抽選中...";
     nearbyBtn.hidden = true;
     document.getElementById("copy-btn").hidden = true;
-    document.getElementById("fortune-tip").textContent = "";
+    var tipEl = document.getElementById("fortune-tip");
+    if (tipEl) tipEl.textContent = "";
     resultEl.classList.add("spinning");
 
     var spinPool = choices.slice();
@@ -961,6 +963,20 @@
         document.getElementById("go").style.opacity = "";
         document.getElementById("go").style.pointerEvents = "";
         playDing();
+        // 隨機小建議
+        var tips = [
+          "記得配一杯無糖茶",
+          "今天適合慢慢吃",
+          "吃完可以散個步",
+          "別忘了喝水",
+          "今天可以早點休息",
+          "吃飽了就好，別太撐",
+          "如果很忙，可以外帶",
+          "記得看一下營業時間"
+        ];
+        var tip = tips[Math.floor(Math.random() * tips.length)];
+        var tipEl = document.getElementById("fortune-tip");
+        if (tipEl) tipEl.textContent = tip;
         // 自動語音播報
         if (window.speechSynthesis) {
           window.speechSynthesis.cancel();
