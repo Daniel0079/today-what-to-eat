@@ -97,10 +97,22 @@
     text-transform: uppercase;
   }
 
+  .sign-result {
+    margin: 0;
+    font-size: clamp(3.4rem, 15vw, 6.2rem);
+    font-weight: 900;
+    color: #ffe082;
+    line-height: 1.05;
+    overflow-wrap: anywhere;
+    letter-spacing: 0.03em;
+    text-shadow: 0 3px 0 rgba(0,0,0,0.45), 0 0 16px rgba(255, 224, 130, 0.6);
+  }
+
   .sign-result.spinning {
     animation: slotSpin 0.12s linear infinite;
-    filter: blur(0.5px);
-    transform: scale(1.05);
+    filter: blur(0.4px);
+    transform: scale(1.08);
+    color: #fff8dc;
   }
 
   @keyframes slotSpin {
@@ -244,12 +256,12 @@
   .recent-item {
     display: inline-flex;
     align-items: center;
-    min-height: 36px;
-    padding: 0 12px;
+    min-height: 40px;
+    padding: 0 14px;
     border-radius: 999px;
-    background: rgba(120, 135, 154, 0.14);
-    border: 2px solid rgba(61, 72, 84, 0.22);
-    font-size: 1rem;
+    background: rgba(120, 135, 154, 0.18);
+    border: 2px solid rgba(61, 72, 84, 0.3);
+    font-size: 1.15rem;
     font-weight: 700;
     color: var(--steel-900);
   }
@@ -331,17 +343,24 @@
   .list li {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
     padding: 10px 0;
     border-top: 2px solid var(--steel-300);
   }
 
   .list .name {
-    font-size: 1.5rem;
+    flex: 1;
+    min-width: 0;
+    font-size: 1.8rem;
     font-weight: 700;
     overflow-wrap: anywhere;
     color: var(--steel-900);
+  }
+
+  .list .actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
   }
 
   .list .del {
@@ -808,6 +827,9 @@
         span.style.textDecoration = "line-through";
       }
 
+      var actions = document.createElement("div");
+      actions.className = "actions";
+
       var excludeBtn = document.createElement("button");
       excludeBtn.type = "button";
       excludeBtn.className = "del";
@@ -835,15 +857,44 @@
       del.setAttribute("aria-label", "刪掉 " + name);
       del.addEventListener("click", function () { removeItem(index); });
 
+      actions.appendChild(excludeBtn);
+      actions.appendChild(del);
       li.appendChild(span);
-      li.appendChild(excludeBtn);
-      li.appendChild(del);
+      li.appendChild(actions);
       listEl.appendChild(li);
     });
   }
 
+  var SKIP_DELETE_CONFIRM_KEY = "today-what-to-eat-skip-delete-confirm";
+
+  function shouldSkipDeleteConfirm() {
+    try {
+      return localStorage.getItem(SKIP_DELETE_CONFIRM_KEY) === "1";
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function setSkipDeleteConfirm() {
+    try {
+      localStorage.setItem(SKIP_DELETE_CONFIRM_KEY, "1");
+    } catch (e) {}
+  }
+
   function removeItem(index) {
     var name = MENU[category][index];
+    if (!name) return;
+
+    if (!shouldSkipDeleteConfirm()) {
+      if (!confirm("確定要刪掉「" + name + "」嗎？")) return;
+      if (confirm("下次刪除時還要再問一次嗎？\n（按「取消」就不再詢問）")) {
+        // 使用者選「確定」→ 下次還要問
+      } else {
+        setSkipDeleteConfirm();
+        showMsg("已設定：刪除時不再詢問", false, true);
+      }
+    }
+
     MENU[category].splice(index, 1);
     var saved = saveMenu();
     renderEditor();
@@ -856,6 +907,7 @@
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(RECENT_KEY);
       localStorage.removeItem(EXCLUDED_KEY);
+      localStorage.removeItem(SKIP_DELETE_CONFIRM_KEY);
     } catch (e) {}
     MENU = JSON.parse(JSON.stringify(DEFAULT_MENU));
     recentHistory = [];
