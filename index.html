@@ -865,29 +865,31 @@
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     var osc = audioCtx.createOscillator();
     var gain = audioCtx.createGain();
-    osc.type = "square";
-    osc.frequency.value = 180 + Math.random() * 80;
-    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+    var types = ["square", "triangle", "sawtooth"];
+    osc.type = types[Math.floor(Math.random() * types.length)];
+    osc.frequency.value = 160 + Math.random() * 120;
+    gain.gain.setValueAtTime(0.06 + Math.random() * 0.04, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.06 + Math.random() * 0.04);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start();
-    osc.stop(audioCtx.currentTime + 0.08);
+    osc.stop(audioCtx.currentTime + 0.1);
   }
 
   function playDing() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     var osc = audioCtx.createOscillator();
     var gain = audioCtx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(523, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(784, audioCtx.currentTime + 0.15);
-    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+    osc.type = Math.random() > 0.5 ? "sine" : "triangle";
+    var base = 480 + Math.random() * 80;
+    osc.frequency.setValueAtTime(base, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(base * 1.5, audioCtx.currentTime + 0.18);
+    gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.45);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start();
-    osc.stop(audioCtx.currentTime + 0.4);
+    osc.stop(audioCtx.currentTime + 0.45);
   }
 
   document.getElementById("go").addEventListener("click", function () {
@@ -935,6 +937,7 @@
     labelEl.textContent = "抽選中...";
     nearbyBtn.hidden = true;
     document.getElementById("copy-btn").hidden = true;
+    document.getElementById("fortune-tip").textContent = "";
     resultEl.classList.add("spinning");
 
     var spinPool = choices.slice();
