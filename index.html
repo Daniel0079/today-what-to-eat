@@ -961,9 +961,19 @@
         // 自動語音播報
         if (window.speechSynthesis) {
           window.speechSynthesis.cancel();
-          var utter = new SpeechSynthesisUtterance("今天吃，" + pick);
+          var phrases = [
+            "好啦，今天就吃" + pick + "吧",
+            "嗯...今天吃" + pick + "好了",
+            "那就" + pick + "吧，決定了",
+            "今天就來" + pick + "啊",
+            "好，" + pick + "，就這樣",
+            "今天吃" + pick + "，沒問題"
+          ];
+          var text = phrases[Math.floor(Math.random() * phrases.length)];
+          var utter = new SpeechSynthesisUtterance(text);
           utter.lang = "zh-TW";
-          utter.rate = 0.95;
+          utter.rate = 0.9;
+          utter.pitch = 1.08;
           var voices = window.speechSynthesis.getVoices();
           var zhVoice = voices.filter(function (v) { return v.lang && v.lang.indexOf("zh") === 0; })[0];
           if (zhVoice) utter.voice = zhVoice;
