@@ -400,8 +400,12 @@
   <div class="location-box">
     <label class="location-label" for="location-input">你現在在哪裡？例如：鳳山站</label>
     <input class="location-input" id="location-input" type="text" placeholder="你現在在哪裡？例如：鳳山站" aria-label="你現在在哪裡">
-    <label class="location-label" for="temp-input" style="margin-top:12px;">目前溫度（選填，會影響推薦）</label>
-    <input class="location-input" id="temp-input" type="number" placeholder="例如：28" aria-label="目前溫度" style="min-height:52px;">
+    <label class="location-label" for="temp-input" style="margin-top:12px;">目前體感溫度（選填，會影響推薦）</label>
+    <div style="display:flex; gap:8px;">
+      <input class="location-input" id="temp-input" type="number" placeholder="例如：32" aria-label="目前體感溫度" style="min-height:52px; flex:1;">
+      <button type="button" id="detect-temp-btn" class="del" style="min-height:52px; padding:0 16px; font-size:1.1rem; white-space:nowrap;">自動偵測</button>
+    </div>
+    <p id="temp-status" style="margin:6px 0 0; font-size:0.95rem; color:#556373;"></p>
   </div>
 
   <section class="sign" aria-live="polite">
@@ -664,17 +668,63 @@
     });
   });
 
+  function detectFeelsLike() {
+    var statusEl = document.getElementById("temp-status");
+    var tempInput = document.getElementById("temp-input");
+    statusEl.textContent = "正在取得位置...";
+
+    if (!navigator.geolocation) {
+      statusEl.textContent = "這個瀏覽器不支援定位";
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        var lat = pos.coords.latitude;
+        var lon = pos.coords.longitude;
+        statusEl.textContent = "正在查詢體感溫度...";
+
+        fetch("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon + "&current=apparent_temperature")
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            var feels = data.current && data.current.apparent_temperature;
+            if (typeof feels === "number") {
+              tempInput.value = Math.round(feels);
+              statusEl.textContent = "已自動填入體感溫度：" + Math.round(feels) + "°C";
+            } else {
+              statusEl.textContent = "無法取得體感溫度";
+            }
+          })
+          .catch(function () {
+            statusEl.textContent = "查詢失敗，請稍後再試";
+          });
+      },
+      function (err) {
+        if (err.code === 1) {
+          statusEl.textContent = "已拒絕定位權限，請手動輸入";
+        } else {
+          statusEl.textContent = "無法取得位置，請手動輸入";
+        }
+      },
+      { enableHighAccuracy: false, timeout: 8000 }
+    );
+  }
+
+  document.getElementById("detect-temp-btn").addEventListener("click", detectFeelsLike);
+
   function applyTemperatureFilter(pool) {
     var tempInput = document.getElementById("temp-input");
-    var temp = parseFloat(tempInput.value);
-    if (isNaN(temp)) return pool;
+    var feelsLike = parseFloat(tempInput.value);
+    if (isNaN(feelsLike)) return pool;
 
     var preferred = [];
-    if (temp >= 30) {
+    if (feelsLike >= 30) {
+      // 體感熱：涼的、冰的、清爽
       preferred = pool.filter(function (item) {
         return /(涼|冰|豆花|剉冰|沙拉|茶|水果|西瓜|芒果|優格|清粥|燕麥)/.test(item);
       });
-    } else if (temp <= 18) {
+    } else if (feelsLike <= 18) {
+      // 體感冷：熱的、湯的、火鍋
       preferred = pool.filter(function (item) {
         return /(火鍋|湯|麵|牛肉|羊肉|薑母|麻辣|鍋|熱|粥|便當|滷)/.test(item);
       });
