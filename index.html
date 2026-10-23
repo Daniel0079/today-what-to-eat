@@ -471,6 +471,7 @@
   var CATS = ["早餐", "午晚餐", "小吃", "甜點", "飲料"];
   var STORAGE_KEY = "today-what-to-eat-menu";
   var RECENT_KEY = "today-what-to-eat-recent";
+  var EXCLUDED_KEY = "today-what-to-eat-excluded";
 
   var MOOD_RULES = {
     all: function () { return true; },
@@ -526,7 +527,26 @@
     }
   }
 
-  function saveRecentHistory() {
+  function loadExcluded() {
+    try {
+      var raw = localStorage.getItem(EXCLUDED_KEY);
+      if (!raw) return [];
+      var data = JSON.parse(raw);
+      if (!Array.isArray(data)) return [];
+      return data.filter(function (x) { return typeof x === "string"; });
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveExcluded() {
+    try {
+      localStorage.setItem(EXCLUDED_KEY, JSON.stringify(excludedList));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
     try {
       localStorage.setItem(RECENT_KEY, JSON.stringify(recentHistory));
       return true;
@@ -564,6 +584,27 @@
   var lastPick = null;
   var currentPick = null;
   var recentHistory = loadRecentHistory();
+  var excludedList = loadExcluded();
+
+  function getSuggestedCategory() {
+    var h = new Date().getHours();
+    if (h >= 5 && h < 11) return "早餐";
+    if (h >= 11 && h < 15) return "午晚餐";
+    if (h >= 15 && h < 18) return "小吃";
+    if (h >= 18 && h < 22) return "午晚餐";
+    if (h >= 22 || h < 5) return "小吃";
+    return "all";
+  }
+
+  function autoSelectCategory() {
+    var suggested = getSuggestedCategory();
+    if (suggested === "all") return;
+    category = suggested;
+    catButtons.forEach(function (btn) {
+      var isMatch = btn.getAttribute("data-cat") === suggested;
+      btn.setAttribute("aria-pressed", isMatch ? "true" : "false");
+    });
+  }
 
   var catButtons = document.querySelectorAll(".cat");
   var moodButtons = document.querySelectorAll(".mood");
@@ -620,7 +661,10 @@
     var moodFiltered = filterByMood(pool);
     var recentBlocked = recentHistory.slice(0, 5);
     var choices = moodFiltered.filter(function (item) {
-      return recentBlocked.indexOf(item) === -1;
+      return recentBlocked.indexOf(item) === -1 && excludedList.indexOf(item) === -1;
+    });
+    if (choices.length === 0) choices = moodFiltered.filter(function (item) {
+      return excludedList.indexOf(item) === -1;
     });
     if (choices.length === 0) choices = moodFiltered;
 
@@ -673,13 +717,40 @@
       var span = document.createElement("span");
       span.className = "name";
       span.textContent = name;
+      if (excludedList.indexOf(name) !== -1) {
+        span.style.opacity = "0.5";
+        span.style.textDecoration = "line-through";
+      }
+
+      var excludeBtn = document.createElement("button");
+      excludeBtn.type = "button";
+      excludeBtn.className = "del";
+      excludeBtn.style.background = excludedList.indexOf(name) !== -1
+        ? "linear-gradient(180deg, #556373 0%, #3b4652 100%)"
+        : "linear-gradient(180deg, #a8312d 0%, #7a241f 100%)";
+      excludeBtn.textContent = excludedList.indexOf(name) !== -1 ? "取消排除" : "排除";
+      excludeBtn.setAttribute("aria-label", (excludedList.indexOf(name) !== -1 ? "取消排除 " : "排除 ") + name);
+      excludeBtn.addEventListener("click", function () {
+        var idx = excludedList.indexOf(name);
+        if (idx === -1) {
+          excludedList.push(name);
+        } else {
+          excludedList.splice(idx, 1);
+        }
+        saveExcluded();
+        renderEditor();
+        showMsg(excludedList.indexOf(name) !== -1 ? "已排除：" + name : "已取消排除：" + name, false, true);
+      });
+
       var del = document.createElement("button");
       del.type = "button";
       del.className = "del";
       del.textContent = "刪掉";
       del.setAttribute("aria-label", "刪掉 " + name);
       del.addEventListener("click", function () { removeItem(index); });
+
       li.appendChild(span);
+      li.appendChild(excludeBtn);
       li.appendChild(del);
       listEl.appendChild(li);
     });
@@ -698,9 +769,11 @@
     try {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(RECENT_KEY);
+      localStorage.removeItem(EXCLUDED_KEY);
     } catch (e) {}
     MENU = JSON.parse(JSON.stringify(DEFAULT_MENU));
     recentHistory = [];
+    excludedList = [];
     lastPick = null;
     currentPick = null;
     nearbyBtn.hidden = true;
@@ -730,6 +803,7 @@
   });
 
   updateRecentDisplay();
+  autoSelectCategory();
   renderEditor();
 </script>
 </body>
