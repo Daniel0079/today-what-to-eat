@@ -400,6 +400,8 @@
   <div class="location-box">
     <label class="location-label" for="location-input">你現在在哪裡？例如：鳳山站</label>
     <input class="location-input" id="location-input" type="text" placeholder="你現在在哪裡？例如：鳳山站" aria-label="你現在在哪裡">
+    <label class="location-label" for="temp-input" style="margin-top:12px;">目前溫度（選填，會影響推薦）</label>
+    <input class="location-input" id="temp-input" type="number" placeholder="例如：28" aria-label="目前溫度" style="min-height:52px;">
   </div>
 
   <section class="sign" aria-live="polite">
@@ -447,6 +449,10 @@
     <ul class="list" id="list"></ul>
     <p class="empty" id="empty" hidden>這一類目前沒有選項，請先新增。</p>
     <button type="button" id="reset-btn" class="del" style="margin-top: 16px; width: 100%; min-height: 56px; font-size: 1.3rem;">重置為預設選單</button>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px;">
+      <button type="button" id="export-btn" class="del" style="min-height:52px; font-size:1.2rem; background:linear-gradient(180deg,#3b4652 0%,#2a3139 100%);">匯出選單</button>
+      <button type="button" id="import-btn" class="del" style="min-height:52px; font-size:1.2rem; background:linear-gradient(180deg,#3b4652 0%,#2a3139 100%);">匯入選單</button>
+    </div>
   </details>
 </main>
 
@@ -658,6 +664,24 @@
     });
   });
 
+  function applyTemperatureFilter(pool) {
+    var tempInput = document.getElementById("temp-input");
+    var temp = parseFloat(tempInput.value);
+    if (isNaN(temp)) return pool;
+
+    var preferred = [];
+    if (temp >= 30) {
+      preferred = pool.filter(function (item) {
+        return /(涼|冰|豆花|剉冰|沙拉|茶|水果|西瓜|芒果|優格|清粥|燕麥)/.test(item);
+      });
+    } else if (temp <= 18) {
+      preferred = pool.filter(function (item) {
+        return /(火鍋|湯|麵|牛肉|羊肉|薑母|麻辣|鍋|熱|粥|便當|滷)/.test(item);
+      });
+    }
+    return preferred.length > 0 ? preferred : pool;
+  }
+
   function filterByMood(pool) {
     if (mood === "all") return pool;
     var rule = MOOD_RULES[mood] || MOOD_RULES.all;
@@ -715,14 +739,15 @@
     }
 
     var moodFiltered = filterByMood(pool);
+    var tempFiltered = applyTemperatureFilter(moodFiltered);
     var recentBlocked = recentHistory.slice(0, 5);
-    var choices = moodFiltered.filter(function (item) {
+    var choices = tempFiltered.filter(function (item) {
       return recentBlocked.indexOf(item) === -1 && excludedList.indexOf(item) === -1;
     });
-    if (choices.length === 0) choices = moodFiltered.filter(function (item) {
+    if (choices.length === 0) choices = tempFiltered.filter(function (item) {
       return excludedList.indexOf(item) === -1;
     });
-    if (choices.length === 0) choices = moodFiltered;
+    if (choices.length === 0) choices = tempFiltered;
 
     var poolAfterLastPick = choices.filter(function (item) { return item !== lastPick; });
     if (poolAfterLastPick.length > 0) choices = poolAfterLastPick;
@@ -900,6 +925,37 @@
     renderEditor();
     showMsg("已刪掉：" + name, false, saved);
   }
+
+  document.getElementById("export-btn").addEventListener("click", function () {
+    var data = JSON.stringify(MENU, null, 2);
+    var blob = new Blob([data], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "today-what-to-eat-menu.json";
+    a.click();
+    URL.revokeObjectURL(url);
+    showMsg("已匯出選單", false, true);
+  });
+
+  document.getElementById("import-btn").addEventListener("click", function () {
+    var input = prompt("請貼上之前匯出的 JSON 選單內容：");
+    if (!input) return;
+    try {
+      var data = JSON.parse(input);
+      var valid = true;
+      CATS.forEach(function (cat) {
+        if (!Array.isArray(data[cat])) valid = false;
+      });
+      if (!valid) throw new Error("格式不正確");
+      MENU = data;
+      var saved = saveMenu();
+      renderEditor();
+      showMsg("已匯入選單", false, saved);
+    } catch (e) {
+      showMsg("匯入失敗，請確認是正確的 JSON 格式", true);
+    }
+  });
 
   document.getElementById("reset-btn").addEventListener("click", function () {
     if (!confirm("確定要重置為預設選單嗎？\n這會清除所有自訂的選項與最近抽到的紀錄。")) return;
