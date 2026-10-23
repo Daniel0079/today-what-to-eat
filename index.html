@@ -274,6 +274,7 @@
     padding: 0 14px 14px;
     background: rgba(255,255,255,0.18);
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 8px 18px rgba(31,36,42,0.08);
+    overflow: hidden;
   }
 
   .editor summary {
@@ -283,9 +284,38 @@
     cursor: pointer;
     color: var(--steel-900);
     list-style: none;
+    position: relative;
   }
 
   .editor summary::-webkit-details-marker { display: none; }
+
+  .editor summary::after {
+    content: "▸";
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.4rem;
+    transition: transform 0.25s ease;
+  }
+
+  .editor[open] summary::after {
+    transform: translateY(-50%) rotate(90deg);
+  }
+
+  .editor-content {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.35s ease;
+  }
+
+  .editor[open] .editor-content {
+    grid-template-rows: 1fr;
+  }
+
+  .editor-inner {
+    overflow: hidden;
+  }
 
   .editor-title {
     margin: 8px 0 12px;
@@ -449,18 +479,22 @@
 
   <details class="editor" id="editor">
     <summary>新增或刪掉選項</summary>
-    <p class="editor-title" id="editor-title"></p>
-    <form class="add" id="add-form" autocomplete="off">
-      <input type="text" id="new-item" maxlength="20" placeholder="輸入新的選項" aria-label="新的選項名稱">
-      <button type="submit">新增</button>
-    </form>
-    <p class="msg" id="msg" aria-live="polite"></p>
-    <ul class="list" id="list"></ul>
-    <p class="empty" id="empty" hidden>這一類目前沒有選項，請先新增。</p>
-    <button type="button" id="reset-btn" class="del" style="margin-top: 16px; width: 100%; min-height: 56px; font-size: 1.3rem;">重置為預設選單</button>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px;">
-      <button type="button" id="export-btn" class="del" style="min-height:52px; font-size:1.2rem; background:linear-gradient(180deg,#5dade2 0%,#3498db 100%); color:#ffffff;">匯出選單</button>
-      <button type="button" id="import-btn" class="del" style="min-height:52px; font-size:1.2rem; background:linear-gradient(180deg,#5dade2 0%,#3498db 100%); color:#ffffff;">匯入選單</button>
+    <div class="editor-content">
+      <div class="editor-inner">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:8px 0 14px;">
+          <button type="button" id="export-btn" class="del" style="min-height:48px; font-size:1.15rem; background:linear-gradient(180deg,#5dade2 0%,#3498db 100%); color:#ffffff;">匯出選單</button>
+          <button type="button" id="import-btn" class="del" style="min-height:48px; font-size:1.15rem; background:linear-gradient(180deg,#5dade2 0%,#3498db 100%); color:#ffffff;">匯入選單</button>
+        </div>
+        <p class="editor-title" id="editor-title"></p>
+        <form class="add" id="add-form" autocomplete="off">
+          <input type="text" id="new-item" maxlength="20" placeholder="輸入新的選項" aria-label="新的選項名稱">
+          <button type="submit">新增</button>
+        </form>
+        <p class="msg" id="msg" aria-live="polite"></p>
+        <ul class="list" id="list"></ul>
+        <p class="empty" id="empty" hidden>這一類目前沒有選項，請先新增。</p>
+        <button type="button" id="reset-btn" class="del" style="margin-top: 16px; width: 100%; min-height: 56px; font-size: 1.3rem;">重置為預設選單</button>
+      </div>
     </div>
   </details>
 </main>
@@ -853,6 +887,7 @@
         currentPick = pick;
         addRecentPick(pick);
         nearbyBtn.hidden = false;
+        document.getElementById("copy-btn").hidden = false;
         isSpinning = false;
         document.getElementById("go").style.opacity = "";
         document.getElementById("go").style.pointerEvents = "";
@@ -1032,33 +1067,45 @@
 
   document.getElementById("export-btn").addEventListener("click", function () {
     var data = JSON.stringify(MENU, null, 2);
-    var blob = new Blob([data], { type: "application/json" });
+    var blob = new Blob([data], { type: "application/json;charset=utf-8" });
     var url = URL.createObjectURL(blob);
     var a = document.createElement("a");
     a.href = url;
-    a.download = "today-what-to-eat-menu.json";
+    a.download = "今天該吃什麼-選單.json";
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
-    showMsg("已匯出選單", false, true);
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 100);
+    showMsg("已下載選單檔案", false, true);
   });
 
   document.getElementById("import-btn").addEventListener("click", function () {
-    var input = prompt("請貼上之前匯出的 JSON 選單內容：");
-    if (!input) return;
-    try {
-      var data = JSON.parse(input);
-      var valid = true;
-      CATS.forEach(function (cat) {
-        if (!Array.isArray(data[cat])) valid = false;
-      });
-      if (!valid) throw new Error("格式不正確");
-      MENU = data;
-      var saved = saveMenu();
-      renderEditor();
-      showMsg("已匯入選單", false, saved);
-    } catch (e) {
-      showMsg("匯入失敗，請確認是正確的 JSON 格式", true);
-    }
+    var input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json,application/json";
+    input.onchange = function () {
+      var file = input.files && input.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          var data = JSON.parse(e.target.result);
+          var valid = true;
+          CATS.forEach(function (cat) {
+            if (!Array.isArray(data[cat])) valid = false;
+          });
+          if (!valid) throw new Error("格式不正確");
+          MENU = data;
+          var saved = saveMenu();
+          renderEditor();
+          showMsg("已從檔案匯入選單", false, saved);
+        } catch (err) {
+          showMsg("匯入失敗，請確認是正確的選單 JSON 檔", true);
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
   });
 
   document.getElementById("reset-btn").addEventListener("click", function () {
