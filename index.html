@@ -439,6 +439,7 @@
 
   <button class="go" id="go">幫我決定</button>
   <button class="nearby" id="nearby" hidden>找附近的店</button>
+  <button class="nearby" id="copy-btn" hidden style="background:linear-gradient(180deg,#5dade2 0%,#3498db 100%); border-color:#aed6f1;">複製結果</button>
 
   <div class="recent-panel" aria-live="polite">
     <p class="recent-title">最近吃過</p>
@@ -801,6 +802,7 @@
       resultEl.textContent = "請先新增";
       nearbyBtn.hidden = true;
       currentPick = null;
+      document.getElementById("copy-btn").hidden = true;
       return;
     }
 
@@ -832,6 +834,7 @@
     document.getElementById("go").style.pointerEvents = "none";
     labelEl.textContent = "抽選中...";
     nearbyBtn.hidden = true;
+    document.getElementById("copy-btn").hidden = true;
     resultEl.classList.add("spinning");
 
     var spinPool = choices.slice();
@@ -875,6 +878,41 @@
 
     spin();
   });
+
+  document.getElementById("copy-btn").addEventListener("click", function () {
+    if (!currentPick) return;
+    var catText = category === "all" ? "" : "（" + category + "）";
+    var text = "今天吃：" + currentPick + catText;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        var btn = document.getElementById("copy-btn");
+        var original = btn.textContent;
+        btn.textContent = "已複製！";
+        setTimeout(function () { btn.textContent = original; }, 1500);
+      }).catch(function () {
+        fallbackCopy(text);
+      });
+    } else {
+      fallbackCopy(text);
+    }
+  });
+
+  function fallbackCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand("copy");
+      var btn = document.getElementById("copy-btn");
+      var original = btn.textContent;
+      btn.textContent = "已複製！";
+      setTimeout(function () { btn.textContent = original; }, 1500);
+    } catch (e) {}
+    document.body.removeChild(ta);
+  }
 
   nearbyBtn.addEventListener("click", function () {
     if (!currentPick) return;
@@ -1039,6 +1077,7 @@
     nearbyBtn.hidden = true;
     labelEl.textContent = "選好種類，再按下面的大按鈕";
     resultEl.textContent = "今天該吃什麼";
+    document.getElementById("copy-btn").hidden = true;
     updateRecentDisplay();
     renderEditor();
     showMsg("已重置為預設選單", false, true);
