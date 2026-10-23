@@ -427,7 +427,10 @@
 </head>
 <body>
 <main>
-  <div class="location-box">
+  <div class="location-box" style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px;">
+    <span style="font-weight:800; font-size:1.1rem;">今天該吃什麼</span>
+    <button type="button" id="theme-btn" class="mood" style="min-height:40px; padding:0 14px;">深色模式</button>
+  </div>
     <label class="location-label" for="location-input">你現在在哪裡？例如：鳳山站</label>
     <input class="location-input" id="location-input" type="text" placeholder="你現在在哪裡？例如：鳳山站" aria-label="你現在在哪裡">
     <label class="location-label" style="margin-top:12px;">目前體感如何？（會影響推薦）</label>
@@ -472,9 +475,11 @@
   <button class="nearby" id="copy-btn" hidden style="background:linear-gradient(180deg,#5dade2 0%,#3498db 100%); border-color:#aed6f1;">複製結果</button>
 
   <div class="recent-panel" aria-live="polite">
-    <p class="recent-title">最近吃過</p>
+    <p class="recent-title">最近紀錄</p>
     <p class="recent-status" id="recent-status">還沒抽過，先讓命運決定！</p>
     <ul class="recent-list" id="recent-list"></ul>
+    <p id="history-summary" style="margin:10px 0 0; font-size:0.95rem; color:#556373;"></p>
+    <button type="button" id="clear-history-btn" class="del" style="margin-top:10px; width:100%; min-height:44px; font-size:1.1rem; background:linear-gradient(180deg,#78879a 0%,#556373 100%);" hidden>清除歷史紀錄</button>
   </div>
 
   <details class="editor" id="editor">
@@ -628,18 +633,40 @@
 
   function updateRecentDisplay() {
     recentListEl.innerHTML = "";
+    var summaryEl = document.getElementById("history-summary");
+    var clearBtn = document.getElementById("clear-history-btn");
+
     if (recentHistory.length === 0) {
       recentStatus.textContent = "還沒抽過，先讓命運決定！";
+      summaryEl.textContent = "";
+      clearBtn.hidden = true;
       return;
     }
-    recentStatus.textContent = "最近 10 次抽到：";
+
+    recentStatus.textContent = "最近抽到：";
     recentHistory.forEach(function (name) {
       var li = document.createElement("li");
       li.className = "recent-item";
       li.textContent = name;
       recentListEl.appendChild(li);
     });
+
+    var count = {};
+    recentHistory.forEach(function (name) {
+      count[name] = (count[name] || 0) + 1;
+    });
+    var top = Object.keys(count).sort(function (a, b) { return count[b] - count[a]; }).slice(0, 3);
+    var topText = top.map(function (n) { return n + "（" + count[n] + "次）"; }).join("、");
+    summaryEl.textContent = "最近最常抽到：" + topText;
+    clearBtn.hidden = false;
   }
+
+  document.getElementById("clear-history-btn").addEventListener("click", function () {
+    if (!confirm("確定要清除所有歷史紀錄嗎？")) return;
+    recentHistory = [];
+    saveRecentHistory();
+    updateRecentDisplay();
+  });
 
   function addRecentPick(name) {
     recentHistory = recentHistory.filter(function (item) { return item !== name; });
@@ -1148,9 +1175,22 @@
     showMsg("已新增：" + name, false, saved);
   });
 
-  updateRecentDisplay();
-  autoSelectCategory();
-  renderEditor();
+  var THEME_KEY = "today-what-to-eat-theme";
+
+  function applyTheme() {
+    var isDark = localStorage.getItem(THEME_KEY) === "dark";
+    document.body.classList.toggle("dark", isDark);
+    var btn = document.getElementById("theme-btn");
+    if (btn) btn.textContent = isDark ? "淺色模式" : "深色模式";
+  }
+
+  document.getElementById("theme-btn").addEventListener("click", function () {
+    var isDark = document.body.classList.contains("dark");
+    localStorage.setItem(THEME_KEY, isDark ? "light" : "dark");
+    applyTheme();
+  });
+
+  applyTheme();
 </script>
 </body>
 </html>
