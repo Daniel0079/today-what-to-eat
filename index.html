@@ -469,8 +469,10 @@
   </div>
 
   <div class="location-box">
-    <label class="location-label" for="location-input">你現在在哪裡？例如：鳳山站</label>
-    <input class="location-input" id="location-input" type="text" placeholder="你現在在哪裡？例如：鳳山站" aria-label="你現在在哪裡">
+    <details>
+      <summary class="location-label" style="cursor:pointer; list-style:none; margin-bottom:0;">你現在在哪裡？（選填）</summary>
+      <input class="location-input" id="location-input" type="text" placeholder="例如：鳳山站" aria-label="你現在在哪裡" style="margin-top:8px;">
+    </details>
   </div>
 
   <section class="sign" aria-live="polite">
