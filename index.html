@@ -478,6 +478,7 @@
   <section class="sign" aria-live="polite">
     <p class="sign-label" id="label">選好種類，再按下面的大按鈕</p>
     <p class="sign-result" id="result">今天該吃什麼</p>
+    <img id="result-img" alt="" style="display:none; width:100%; max-width:320px; height:180px; object-fit:cover; border-radius:12px; margin:10px auto 0; border:3px solid #d4a15a;">
     <p id="fortune-tip" style="margin:8px 0 0; font-size:1.05rem; color:#f2d39d; min-height:1.4em;"></p>
   </section>
 
@@ -951,6 +952,8 @@
     labelEl.textContent = "抽選中...";
     nearbyBtn.hidden = true;
     document.getElementById("copy-btn").hidden = true;
+    var img = document.getElementById("result-img");
+    if (img) img.style.display = "none";
     var tipEl = document.getElementById("fortune-tip");
     if (tipEl) tipEl.textContent = "";
     resultEl.classList.add("spinning");
@@ -972,6 +975,13 @@
         addRecentPick(pick);
         nearbyBtn.hidden = false;
         document.getElementById("copy-btn").hidden = false;
+        // 顯示對應圖片
+        var img = document.getElementById("result-img");
+        if (img) {
+          img.style.display = "block";
+          img.alt = pick;
+          img.src = "https://loremflickr.com/400/300/" + encodeURIComponent(pick) + ",food";
+        }
         isSpinning = false;
         document.getElementById("go").style.opacity = "";
         document.getElementById("go").style.pointerEvents = "";
@@ -1243,6 +1253,8 @@
     nearbyBtn.hidden = true;
     labelEl.textContent = "選好種類，再按下面的大按鈕";
     resultEl.textContent = "今天該吃什麼";
+    var img = document.getElementById("result-img");
+    if (img) img.style.display = "none";
     document.getElementById("copy-btn").hidden = true;
     updateRecentDisplay();
     renderEditor();
