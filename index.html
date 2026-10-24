@@ -1370,16 +1370,9 @@
   });
 
   applyTheme();
-  // 套用上次選擇
+  // 時間優先：分類每次都用時間自動選，只套用上次的心情和體感
+  autoSelectCategory();
   var prefs = loadPrefs();
-  if (prefs.category) {
-    category = prefs.category;
-    document.querySelectorAll(".cat").forEach(function (btn) {
-      btn.setAttribute("aria-pressed", btn.getAttribute("data-cat") === category ? "true" : "false");
-    });
-  } else {
-    autoSelectCategory();
-  }
   if (prefs.feels) selectFeels(prefs.feels);
   if (prefs.mood) {
     mood = prefs.mood;
