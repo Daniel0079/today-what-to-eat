@@ -478,7 +478,6 @@
   <section class="sign" aria-live="polite">
     <p class="sign-label" id="label">選好種類，再按下面的大按鈕</p>
     <p class="sign-result" id="result">今天該吃什麼</p>
-    <img id="result-img" alt="" style="display:none; width:100%; max-width:320px; height:180px; object-fit:cover; border-radius:12px; margin:10px auto 0; border:3px solid #d4a15a;">
     <p id="fortune-tip" style="margin:8px 0 0; font-size:1.05rem; color:#f2d39d; min-height:1.4em;"></p>
   </section>
 
@@ -850,6 +849,46 @@
 
   document.getElementById("detect-temp-btn").addEventListener("click", detectFeelsLike);
 
+  document.getElementById("detect-location-btn").addEventListener("click", function () {
+    var statusEl = document.getElementById("location-status");
+    var inputEl = document.getElementById("location-input");
+    statusEl.textContent = "正在取得位置...";
+
+    if (!navigator.geolocation) {
+      statusEl.textContent = "這個瀏覽器不支援定位";
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        var lat = pos.coords.latitude;
+        var lon = pos.coords.longitude;
+        statusEl.textContent = "正在查詢地名...";
+
+        fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + lon + "&zoom=16&addressdetails=1")
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            var addr = data.address || {};
+            var place = addr.suburb || addr.neighbourhood || addr.village || addr.town || addr.city || addr.county || "";
+            if (place) {
+              inputEl.value = place;
+              statusEl.textContent = "已自動填入：" + place;
+            } else {
+              inputEl.value = lat.toFixed(4) + "," + lon.toFixed(4);
+              statusEl.textContent = "已填入座標";
+            }
+          })
+          .catch(function () {
+            statusEl.textContent = "查詢地名失敗，請手動輸入";
+          });
+      },
+      function (err) {
+        statusEl.textContent = err.code === 1 ? "已拒絕定位權限" : "無法取得位置";
+      },
+      { enableHighAccuracy: false, timeout: 8000 }
+    );
+  });
+
   function applyTemperatureFilter(pool) {
     var preferred = [];
     if (currentFeels === "veryhot" || currentFeels === "hot") {
@@ -952,8 +991,6 @@
     labelEl.textContent = "抽選中...";
     nearbyBtn.hidden = true;
     document.getElementById("copy-btn").hidden = true;
-    var img = document.getElementById("result-img");
-    if (img) img.style.display = "none";
     var tipEl = document.getElementById("fortune-tip");
     if (tipEl) tipEl.textContent = "";
     resultEl.classList.add("spinning");
@@ -975,13 +1012,6 @@
         addRecentPick(pick);
         nearbyBtn.hidden = false;
         document.getElementById("copy-btn").hidden = false;
-        // 顯示對應圖片
-        var img = document.getElementById("result-img");
-        if (img) {
-          img.style.display = "block";
-          img.alt = pick;
-          img.src = "https://loremflickr.com/400/300/" + encodeURIComponent(pick) + ",food";
-        }
         isSpinning = false;
         document.getElementById("go").style.opacity = "";
         document.getElementById("go").style.pointerEvents = "";
@@ -1253,8 +1283,6 @@
     nearbyBtn.hidden = true;
     labelEl.textContent = "選好種類，再按下面的大按鈕";
     resultEl.textContent = "今天該吃什麼";
-    var img = document.getElementById("result-img");
-    if (img) img.style.display = "none";
     document.getElementById("copy-btn").hidden = true;
     updateRecentDisplay();
     renderEditor();
