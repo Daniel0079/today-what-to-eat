@@ -242,6 +242,14 @@
     border-radius: 18px;
     box-shadow: 0 10px 22px rgba(154, 46, 31, 0.28), inset 0 1px 0 rgba(255,255,255,0.2);
     letter-spacing: 0.04em;
+    position: sticky;
+    bottom: 12px;
+    z-index: 20;
+  }
+
+  .sign.result-focus {
+    transform: scale(1.02);
+    transition: transform 0.3s ease;
   }
 
   .nearby {
@@ -518,7 +526,7 @@
     <button class="cat" data-cat="飲料" aria-pressed="false">飲料</button>
   </div>
 
-  <button class="go" id="go">幫我決定</button>
+  <button class="go" id="go">直接決定</button>
 
   <div class="recent-panel" aria-live="polite">
     <p class="recent-title">最近紀錄</p>
@@ -770,12 +778,41 @@
   var recentListEl = document.getElementById("recent-list");
   var recentStatus = document.getElementById("recent-status");
 
+  var PREF_KEY = "today-what-to-eat-prefs";
+
+  function loadPrefs() {
+    try {
+      var raw = localStorage.getItem(PREF_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+
+  function savePrefs() {
+    try {
+      localStorage.setItem(PREF_KEY, JSON.stringify({
+        category: category,
+        feels: currentFeels,
+        mood: mood
+      }));
+    } catch (e) {}
+  }
+
+  function updateGoButtonText() {
+    var btn = document.getElementById("go");
+    if (!btn) return;
+    var suggested = (typeof getSuggestedCategory === "function") ? getSuggestedCategory() : "all";
+    var isDefault = (category === "all" || category === suggested) && mood === "all" && currentFeels === "normal";
+    btn.textContent = isDefault ? "直接決定" : "幫我決定";
+  }
+
   catButtons.forEach(function (btn) {
     btn.addEventListener("click", function () {
       category = btn.getAttribute("data-cat");
       catButtons.forEach(function (b) {
         b.setAttribute("aria-pressed", b === btn ? "true" : "false");
       });
+      savePrefs();
+      updateGoButtonText();
       msgEl.textContent = "";
       msgEl.className = "msg";
       renderEditor();
@@ -788,6 +825,8 @@
       moodButtons.forEach(function (b) {
         b.setAttribute("aria-pressed", b === btn ? "true" : "false");
       });
+      savePrefs();
+      updateGoButtonText();
     });
   });
 
@@ -798,6 +837,8 @@
     document.querySelectorAll(".feels-btn").forEach(function (btn) {
       btn.setAttribute("aria-pressed", btn.getAttribute("data-feels") === feels ? "true" : "false");
     });
+    savePrefs();
+    updateGoButtonText();
   }
 
   document.querySelectorAll(".feels-btn").forEach(function (btn) {
@@ -1329,9 +1370,28 @@
   });
 
   applyTheme();
-  autoSelectCategory();
+  // 套用上次選擇
+  var prefs = loadPrefs();
+  if (prefs.category) {
+    category = prefs.category;
+    document.querySelectorAll(".cat").forEach(function (btn) {
+      btn.setAttribute("aria-pressed", btn.getAttribute("data-cat") === category ? "true" : "false");
+    });
+  } else {
+    autoSelectCategory();
+  }
+  if (prefs.feels) selectFeels(prefs.feels);
+  if (prefs.mood) {
+    mood = prefs.mood;
+    document.querySelectorAll(".mood").forEach(function (btn) {
+      if (btn.getAttribute("data-mood")) {
+        btn.setAttribute("aria-pressed", btn.getAttribute("data-mood") === mood ? "true" : "false");
+      }
+    });
+  }
   updateRecentDisplay();
   renderEditor();
+  updateGoButtonText();
 </script>
 </body>
 </html>
