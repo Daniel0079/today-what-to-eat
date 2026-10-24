@@ -119,6 +119,9 @@
     justify-content: center;
     gap: 10px;
     box-shadow: 0 10px 24px var(--shadow-soft);
+    position: sticky;
+    top: 8px;
+    z-index: 10;
   }
 
   .sign-label {
@@ -244,8 +247,8 @@
   .nearby {
     display: block;
     width: 100%;
-    min-height: 88px;
-    font-size: 2rem;
+    min-height: 72px;
+    font-size: 1.6rem;
     font-weight: 900;
     color: #fffdf9;
     background: linear-gradient(180deg, #214f45 0%, #0c2f2d 100%);
@@ -464,18 +467,10 @@
     <span style="font-weight:800; font-size:1.1rem;">今天該吃什麼</span>
     <button type="button" id="theme-btn" class="mood" style="min-height:40px; padding:0 14px;">深色模式</button>
   </div>
+
+  <div class="location-box">
     <label class="location-label" for="location-input">你現在在哪裡？例如：鳳山站</label>
     <input class="location-input" id="location-input" type="text" placeholder="你現在在哪裡？例如：鳳山站" aria-label="你現在在哪裡">
-    <label class="location-label" style="margin-top:12px;">目前體感如何？（會影響推薦）</label>
-    <div class="mood-list" id="feels-options" style="margin-top:6px;">
-      <button type="button" class="mood feels-btn" data-feels="cold" aria-pressed="false">很冷</button>
-      <button type="button" class="mood feels-btn" data-feels="cool" aria-pressed="false">偏冷</button>
-      <button type="button" class="mood feels-btn" data-feels="normal" aria-pressed="true">舒適</button>
-      <button type="button" class="mood feels-btn" data-feels="hot" aria-pressed="false">偏熱</button>
-      <button type="button" class="mood feels-btn" data-feels="veryhot" aria-pressed="false">很熱</button>
-    </div>
-    <button type="button" id="detect-temp-btn" class="del" style="margin-top:10px; width:100%; min-height:48px; font-size:1.15rem; background:linear-gradient(180deg,#5dade2 0%,#3498db 100%); color:#ffffff; border:0;">自動偵測體感</button>
-    <p id="temp-status" style="margin:6px 0 0; font-size:0.95rem; color:#556373;"></p>
   </div>
 
   <section class="sign" aria-live="polite">
@@ -485,14 +480,27 @@
   </section>
 
   <div class="mood-panel">
-    <p class="mood-label">今天想吃什麼感覺？</p>
-    <div class="mood-list" id="moods">
-      <button class="mood" type="button" data-mood="all" aria-pressed="true">隨機</button>
-      <button class="mood" type="button" data-mood="light" aria-pressed="false">清爽</button>
-      <button class="mood" type="button" data-mood="heavy" aria-pressed="false">重口味</button>
-      <button class="mood" type="button" data-mood="cheap" aria-pressed="false">便宜</button>
-      <button class="mood" type="button" data-mood="healthy" aria-pressed="false">健康</button>
-    </div>
+    <details>
+      <summary class="mood-label" style="cursor:pointer; list-style:none;">進階篩選（心情／體感）</summary>
+      <p class="mood-label" style="margin-top:10px;">今天想吃什麼感覺？</p>
+      <div class="mood-list" id="moods">
+        <button class="mood" type="button" data-mood="all" aria-pressed="true">隨機</button>
+        <button class="mood" type="button" data-mood="light" aria-pressed="false">清爽</button>
+        <button class="mood" type="button" data-mood="heavy" aria-pressed="false">重口味</button>
+        <button class="mood" type="button" data-mood="cheap" aria-pressed="false">便宜</button>
+        <button class="mood" type="button" data-mood="healthy" aria-pressed="false">健康</button>
+      </div>
+      <label class="location-label" style="margin-top:12px;">目前體感如何？</label>
+      <div class="mood-list" id="feels-options" style="margin-top:6px;">
+        <button type="button" class="mood feels-btn" data-feels="cold" aria-pressed="false">很冷</button>
+        <button type="button" class="mood feels-btn" data-feels="cool" aria-pressed="false">偏冷</button>
+        <button type="button" class="mood feels-btn" data-feels="normal" aria-pressed="true">舒適</button>
+        <button type="button" class="mood feels-btn" data-feels="hot" aria-pressed="false">偏熱</button>
+        <button type="button" class="mood feels-btn" data-feels="veryhot" aria-pressed="false">很熱</button>
+      </div>
+      <button type="button" id="detect-temp-btn" class="del" style="margin-top:10px; width:100%; min-height:48px; font-size:1.15rem; background:linear-gradient(180deg,#5dade2 0%,#3498db 100%); color:#ffffff; border:0;">自動偵測體感</button>
+      <p id="temp-status" style="margin:6px 0 0; font-size:0.95rem; color:#556373;"></p>
+    </details>
   </div>
 
   <div class="cats" id="cats">
@@ -505,8 +513,6 @@
   </div>
 
   <button class="go" id="go">幫我決定</button>
-  <button class="nearby" id="nearby" hidden>找附近的店</button>
-  <button class="nearby" id="copy-btn" hidden style="background:linear-gradient(180deg,#5dade2 0%,#3498db 100%); border-color:#aed6f1;">複製結果</button>
 
   <div class="recent-panel" aria-live="polite">
     <p class="recent-title">最近紀錄</p>
@@ -514,6 +520,11 @@
     <ul class="recent-list" id="recent-list"></ul>
     <p id="history-summary" style="margin:10px 0 0; font-size:0.95rem; color:#556373;"></p>
     <button type="button" id="clear-history-btn" class="del" style="margin-top:10px; width:100%; min-height:44px; font-size:1.1rem; background:linear-gradient(180deg,#78879a 0%,#556373 100%);" hidden>清除歷史紀錄</button>
+  </div>
+
+  <div id="action-buttons" style="display:flex; gap:10px; flex-wrap:wrap;">
+    <button class="nearby" id="nearby" hidden style="flex:1; min-height:72px; font-size:1.5rem;">找附近的店</button>
+    <button class="nearby" id="copy-btn" hidden style="flex:1; min-height:72px; font-size:1.5rem; background:linear-gradient(180deg,#5dade2 0%,#3498db 100%); border-color:#aed6f1;">複製結果</button>
   </div>
 
   <details class="editor" id="editor">
@@ -1270,6 +1281,9 @@
   });
 
   applyTheme();
+  autoSelectCategory();
+  updateRecentDisplay();
+  renderEditor();
 </script>
 </body>
 </html>
